@@ -12,6 +12,7 @@
   "scripts": {
     "legacyify-rooms": "ts-node ./lib/legacyify-rooms.ts",
     "mass-join": "ts-node ./lib/mass-join.ts",
+    "unbridge-rooms": "ts-node ./lib/unbridge-rooms.ts",
     "op-user": "ts-node ./lib/op-user.ts"
   }
 }
