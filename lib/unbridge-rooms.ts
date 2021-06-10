@@ -65,12 +65,16 @@ async function handleRoom(bridgeClient: MatrixClient, roomIdOrAlias: string) {
     const canDropPls = await bridgeClient.userHasPowerLevelFor(myId, roomId, "m.room.power_levels", true);
     if (canDropPls) {
         const pls = await bridgeClient.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        let changed = false;
         for (const user of Object.keys(pls.users)) {
             if (user.match(USER_REGEX) || user === myId) {
                 delete pls.users[user];
+                changed = true;
             }
         }
-        if (Object.keys(pls.users).length > 0) {
+        if (!changed) {
+            log("log", `Not setting PLs, no changes required`);
+        } else if (Object.keys(pls.users).length > 0) {
             log("log", `Set powerlevels`);
             live ? await bridgeClient.sendStateEvent(roomId, "m.room.power_levels", "", pls) : log("log", "would changed the PLs to", pls);
         } else {
