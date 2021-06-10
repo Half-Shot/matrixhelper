@@ -70,7 +70,7 @@ async function handleRoom(bridgeClient: MatrixClient, roomIdOrAlias: string) {
                 delete pls.users[user];
             }
         }
-        if (pls.users.length > 0) {
+        if (Object.keys(pls.users).length > 0) {
             log("log", `Set powerlevels`);
             live ? await bridgeClient.sendStateEvent(roomId, "m.room.power_levels", "", pls) : log("log", "would changed the PLs to", pls);
         } else {
