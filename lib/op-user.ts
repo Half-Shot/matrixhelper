@@ -15,7 +15,7 @@ async function main() {
         await client.joinRoom(roomId, via.split(","));
     }
     const isUserInRoom = await client.getRoomStateEvent(roomId, 'm.room.member', userId);
-    if (isUserInRoom?.membership !== "join") {
+    if (ensureUserInRoom && isUserInRoom?.membership !== "join") {
         await client.inviteUser(userId, roomId);
     }
     await client.setUserPowerLevel(userId, roomId, power);
