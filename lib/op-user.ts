@@ -14,8 +14,14 @@ async function main() {
     if (!isJoined) {
         await client.joinRoom(roomId, via.split(","));
     }
-    const isUserInRoom = await client.getRoomStateEvent(roomId, 'm.room.member', userId);
-    if (ensureUserInRoom && isUserInRoom?.membership !== "join") {
+    let isUserInRoom = true;
+    try {
+        const state = await client.getRoomStateEvent(roomId, 'm.room.member', userId);
+        isUserInRoom = state.membership !== "join";
+    } catch (ex) {
+        isUserInRoom = false;
+    }
+    if (isUserInRoom) {
         await client.inviteUser(userId, roomId);
     }
     await client.setUserPowerLevel(userId, roomId, power);
