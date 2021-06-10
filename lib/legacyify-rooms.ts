@@ -80,7 +80,7 @@ async function makeRoomLegacy(client: MatrixClient, roomId: string, name: string
         await client.sendStateEvent(roomId, "m.room.name", "", {name: `[OBSOLETE] ${name}`});
         console.log("DONE");
         process.stdout.write("Sending notice...");
-        await client.sendText(roomId, "This room is being re-migrated from slack. Please check the room directory momentarily for the new room");
+        await client.sendText(roomId, "This room is being rebridged. Please check the room directory soon for the new room");
         console.log("DONE");
     }
 }

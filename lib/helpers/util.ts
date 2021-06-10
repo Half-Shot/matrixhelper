@@ -6,10 +6,11 @@ export function getClientFromEnv(needAdmin = false) {
     if (!process.env.MX_HOMESERVER) {
         throw Error('No MX_HOMESERVER defined');
     }
-    if (!process.env.MX_ACCESS_TOKEN) {
-        throw Error('No MX_ACCESS_TOKEN defined');
+    const token = process.env.MX_ACCESS_TOKEN || process.env.MX_APPSERVICE_TOKEN;
+    if (!token) {
+        throw Error('No MX_ACCESS_TOKEN or MX_APPSERVICE_TOKEN defined');
     }
-    const client = new MatrixClient(process.env.MX_HOMESERVER, process.env.MX_ACCESS_TOKEN);
+    const client = new MatrixClient(process.env.MX_HOMESERVER, token);
     if (needAdmin) {
         // XXX: Requires https://github.com/turt2live/matrix-bot-sdk/pull/98/files 
         // if (!await client.adminApis.synapse.isAdmin(await client.getUserId())) {
