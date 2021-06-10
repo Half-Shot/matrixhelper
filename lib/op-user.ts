@@ -2,6 +2,8 @@ import { getASClientFromEnv, getClientFromEnv } from "./helpers/util";
 
 async function main() {
     const roomId = process.env.MX_ROOM_ID;
+    const userId = process.env.USER_TO_POWER;
+    const ensureUserInRoom = process.env.ENSURE_USER_IN_ROOM === 'true';
     const via = process.env.MX_ROOM_VIA || roomId.split(':')[1];
     const power = parseInt(process.env.USER_POWER);
     if (Number.isNaN(power) || power < 0 || !Number.isSafeInteger(power)) {
@@ -12,7 +14,11 @@ async function main() {
     if (!isJoined) {
         await client.joinRoom(roomId, via.split(","));
     }
-    await client.setUserPowerLevel(process.env.USER_TO_POWER, roomId, power);
+    const isUserInRoom = await client.getRoomStateEvent(roomId, 'm.room.member', userId);
+    if (isUserInRoom?.membership !== "join") {
+        await client.inviteUser(userId, roomId);
+    }
+    await client.setUserPowerLevel(userId, roomId, power);
     if (!isJoined) {
         await client.leaveRoom(roomId);
     }
