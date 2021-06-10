@@ -19,7 +19,6 @@ async function main() {
     const bridgeClient = getClientFromEnv(true);
     for await (const alias of rl) {
         try {
-            await bridgeClient.joinRoom(alias, ['libera.ems.host']);
             await handleRoom(bridgeClient, alias);
         } catch (ex) {
             console.error(`${alias}: ERROR Failed to handle ${ex.message}`);
