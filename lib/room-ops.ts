@@ -14,6 +14,7 @@ async function findPoweredMatrixUsers(bridgeClient: MatrixClient, roomId: string
         return users;
     }
     if (powerLevelEvent.origin_server_ts < TIMESTAMP_CUTOFF) {
+        console.log(`Cutting off at ${new Date(powerLevelEvent.origin_server_ts).toISOString()}`);
         return null;
     }
     // Keep going
