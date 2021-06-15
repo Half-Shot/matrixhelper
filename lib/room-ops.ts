@@ -63,6 +63,8 @@ async function main() {
         } catch (ex) {
             console.error(`${roomId}: ERROR Failed to handle ${ex.message}`);
         }
+        // Delay to avoid killing the server
+        await new Promise(r => setTimeout(r, 2000));
     }
     await writeFile('room-ops.json', JSON.stringify(results));
 }
