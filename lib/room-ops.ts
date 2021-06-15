@@ -41,11 +41,13 @@ async function handleRoom(bridgeClient: MatrixClient, roomIdOrAlias: string) {
     const users = await findPoweredMatrixUsers(bridgeClient, roomIdOrAlias, powerLevelEvent);
     if (users) {
         log('log', "Found users for room", users);
-        return {room_id: roomIdOrAlias, users: users[0], setAt: users[1]};
+        return {users: users[0], setAt: users[1]};
     } else {
         log('error', "Could not find any Matrix users for this room");
-        return {room_id: roomIdOrAlias, users: null};
+        return {users: null};
     }
+    // Delay to avoid killing the server
+    await new Promise(r => setTimeout(r, 250));
 }
 
 async function main() {
@@ -56,15 +58,18 @@ async function main() {
     });
     const results = [];
     const bridgeClient = getClientFromEnv(true);
-    for await (const roomId of rl) {
+    for await (const input of rl) {
+        const keys = input.split('|');
+        const roomId = keys[0].trim();
+        const ircChannel = keys[1].trim();
         try {
             // For psql style output.
-            results.push(await handleRoom(bridgeClient, roomId.split('|')[0].trim()));
+            const result = await handleRoom(bridgeClient, roomId);
+            results.push({...result, roomId, ircChannel});
         } catch (ex) {
             console.error(`${roomId}: ERROR Failed to handle ${ex.message}`);
+            results.push({roomId, ircChannel, users: null, failed: true});
         }
-        // Delay to avoid killing the server
-        await new Promise(r => setTimeout(r, 2000));
     }
     await fs.writeFile('room-ops.json', JSON.stringify(results));
 }
