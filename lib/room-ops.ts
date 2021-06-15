@@ -56,8 +56,9 @@ async function main() {
         terminal: false,
         crlfDelay: 500,
     });
-    const results = [];
     const bridgeClient = getClientFromEnv(true);
+    const stream = await fs.open('room-ops.json', "w");
+    stream.write('[\n');
     for await (const input of rl) {
         const keys = input.split('|');
         const roomId = keys[0].trim();
@@ -65,13 +66,14 @@ async function main() {
         try {
             // For psql style output.
             const result = await handleRoom(bridgeClient, roomId);
-            results.push({...result, roomId, ircChannel});
+            await stream.write(`  ${JSON.stringify({...result, roomId, ircChannel}, undefined, 0)}\n`);
         } catch (ex) {
             console.error(`${roomId}: ERROR Failed to handle ${ex.message}`);
-            results.push({roomId, ircChannel, users: null, failed: true});
+            await stream.write(`  ${JSON.stringify({roomId, ircChannel, users: null, failed: true}, undefined, 0)}\n`);
         }
+        stream.write(']\n');
+        stream.close();
     }
-    await fs.writeFile('room-ops.json', JSON.stringify(results));
 }
 
 main().catch((ex) => {
