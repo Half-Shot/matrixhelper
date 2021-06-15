@@ -8,12 +8,17 @@ const live = process.env.DRY === 'false';
 const TIMESTAMP_CUTOFF = 1621508400000;
 const MEMBER_CUTOFF = 5;
 
-async function findPoweredMatrixUsers(powerLevelEvent: {content: PowerLevelsEventContent, origin_server_ts: number, unsigned: {replaces_state: string}}) {
+async function findPoweredMatrixUsers(bridgeClient: MatrixClient, roomId: string, powerLevelEvent: {content: PowerLevelsEventContent, origin_server_ts: number, unsigned: {replaces_state: string}}) {
     const users = Object.entries(powerLevelEvent.content.users).filter(([key, value]) => !USER_REGEX.test(key) && value >= 50);
     if (users.length > 0) {
         return users;
     }
-    return null;
+    if (powerLevelEvent.origin_server_ts < TIMESTAMP_CUTOFF) {
+        return null;
+    }
+    // Keep going
+    const event = await bridgeClient.getEvent(roomId, powerLevelEvent.unsigned.replaces_state);
+    return findPoweredMatrixUsers(bridgeClient, roomId, event);
 }
 
 async function handleRoom(bridgeClient: MatrixClient, roomIdOrAlias: string) {
@@ -30,7 +35,7 @@ async function handleRoom(bridgeClient: MatrixClient, roomIdOrAlias: string) {
         log('error', "No power level event in room");
         return;
     }
-    const users = await findPoweredMatrixUsers(powerLevelEvent);
+    const users = await findPoweredMatrixUsers(bridgeClient, roomIdOrAlias, powerLevelEvent);
     if (users) {
         log('log', "Found users for room", users);
     } else {
