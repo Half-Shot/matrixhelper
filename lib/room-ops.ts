@@ -1,6 +1,7 @@
 import { MatrixClient, PowerLevelsEventContent } from "matrix-bot-sdk";
 import { getASClientFromEnv, getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline";
+import { writeFile } from "fs/promises";
 
 const USER_REGEX = new RegExp(process.env.USER_REGEX);
 const live = process.env.DRY === 'false';
@@ -11,7 +12,7 @@ const MEMBER_CUTOFF = 5;
 async function findPoweredMatrixUsers(bridgeClient: MatrixClient, roomId: string, powerLevelEvent: {content: PowerLevelsEventContent, origin_server_ts: number, unsigned: {replaces_state: string}}) {
     const users = Object.entries(powerLevelEvent.content.users).filter(([key, value]) => !USER_REGEX.test(key) && value >= 50);
     if (users.length > 0) {
-        return users;
+        return [users, powerLevelEvent.origin_server_ts];
     }
     if (powerLevelEvent.origin_server_ts < TIMESTAMP_CUTOFF) {
         console.log(`Cutting off at ${new Date(powerLevelEvent.origin_server_ts).toISOString()}`);
@@ -40,11 +41,12 @@ async function handleRoom(bridgeClient: MatrixClient, roomIdOrAlias: string) {
     const users = await findPoweredMatrixUsers(bridgeClient, roomIdOrAlias, powerLevelEvent);
     if (users) {
         log('log', "Found users for room", users);
+        return {room_id: roomIdOrAlias, users: users[0], setAt: users[1]};
     } else {
         log('error', "Could not find any Matrix users for this room");
+        return {room_id: roomIdOrAlias, users: null};
     }
 }
-
 
 async function main() {
     const rl = createInterface({
@@ -52,14 +54,17 @@ async function main() {
         terminal: false,
         crlfDelay: 500,
     });
+    const results = [];
     const bridgeClient = getClientFromEnv(true);
     for await (const roomId of rl) {
         try {
-            await handleRoom(bridgeClient, roomId);
+            // For psql style output.
+            results.push(await handleRoom(bridgeClient, roomId.split('|')[0].trim()));
         } catch (ex) {
             console.error(`${roomId}: ERROR Failed to handle ${ex.message}`);
         }
     }
+    await writeFile('room-ops.json', JSON.stringify(results));
 }
 
 main().catch((ex) => {
