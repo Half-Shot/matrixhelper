@@ -17,6 +17,7 @@ async function findPoweredMatrixUsers(bridgeClient: MatrixClient, roomId: string
         return null;
     }
     // Keep going
+    console.log(`No users found, recursing into ${powerLevelEvent.unsigned.replaces_state}`);
     const event = await bridgeClient.getEvent(roomId, powerLevelEvent.unsigned.replaces_state);
     return findPoweredMatrixUsers(bridgeClient, roomId, event);
 }

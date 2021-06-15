@@ -14,15 +14,17 @@ async function main() {
     if (!isJoined) {
         await client.joinRoom(roomId, via.split(","));
     }
-    let isUserInRoom = true;
-    try {
-        const state = await client.getRoomStateEvent(roomId, 'm.room.member', userId);
-        isUserInRoom = state.membership !== "join";
-    } catch (ex) {
-        isUserInRoom = false;
-    }
-    if (isUserInRoom) {
-        await client.inviteUser(userId, roomId);
+    if (ensureUserInRoom) {
+        let isUserInRoom = true;
+        try {
+            const state = await client.getRoomStateEvent(roomId, 'm.room.member', userId);
+            isUserInRoom = state.membership !== "join";
+        } catch (ex) {
+            isUserInRoom = false;
+        }
+        if (isUserInRoom) {
+            await client.inviteUser(userId, roomId);
+        }
     }
     await client.setUserPowerLevel(userId, roomId, power);
     if (!isJoined) {
