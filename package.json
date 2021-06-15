@@ -14,6 +14,7 @@
     "mass-join": "ts-node ./lib/mass-join.ts",
     "unbridge-rooms": "ts-node ./lib/unbridge-rooms.ts",
     "kick-user-from-all-rooms": "ts-node ./lib/kick-user-from-all-rooms.ts",
+    "room-ops": "ts-node ./lib/room-ops.ts",
     "op-user": "ts-node ./lib/op-user.ts"
   }
 }
