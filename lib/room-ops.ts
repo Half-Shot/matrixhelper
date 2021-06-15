@@ -71,9 +71,9 @@ async function main() {
             console.error(`${roomId}: ERROR Failed to handle ${ex.message}`);
             await stream.write(`  ${JSON.stringify({roomId, ircChannel, users: null, failed: true}, undefined, 0)}\n`);
         }
-        stream.write(']\n');
-        stream.close();
     }
+    stream.write(']\n');
+    stream.close();
 }
 
 main().catch((ex) => {
