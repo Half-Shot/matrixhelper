@@ -1,7 +1,7 @@
 import { MatrixClient, PowerLevelsEventContent } from "matrix-bot-sdk";
 import { getASClientFromEnv, getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline";
-import { writeFile } from "fs/promises";
+import { promises as fs } from "fs";
 
 const USER_REGEX = new RegExp(process.env.USER_REGEX);
 const live = process.env.DRY === 'false';
@@ -66,7 +66,7 @@ async function main() {
         // Delay to avoid killing the server
         await new Promise(r => setTimeout(r, 2000));
     }
-    await writeFile('room-ops.json', JSON.stringify(results));
+    await fs.writeFile('room-ops.json', JSON.stringify(results));
 }
 
 main().catch((ex) => {
