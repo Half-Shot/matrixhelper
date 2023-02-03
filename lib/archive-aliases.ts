@@ -1,7 +1,9 @@
-import { getClientFromEnv } from "./helpers/util";
-import { CanonicalAliasEventContent, LogLevel, LogService, MatrixClient } from "matrix-bot-sdk";
-import { readFile } from 'node:fs/promises';
 import Envs from "./helpers/env";
+import { CanonicalAliasEventContent, LogLevel, LogService, MatrixClient } from "matrix-bot-sdk";
+import { createHash } from "node:crypto";
+import { join } from "node:path";
+import { getClientFromEnv } from "./helpers/util";
+import { readFile } from 'node:fs/promises';
 import { terminal } from "terminal-kit";
 
 const live = !Envs.dry;
@@ -65,14 +67,26 @@ async function archiveRoom(client: MatrixClient, roomId: string, newPrefix: stri
     }
 }
 
+/**
+ * This command will "archive" all rooms given in the output of `find-aliases-in-space`.
+ * 
+ * You *must* run the `find-aliases-in-space` command first.
+ * 
+ * @example yarn find-aliases-in-space '#my-space:example.com' '2023_' 'not_this_prefix,orthis' 'onlythisprefix'
+ */
 async function main() {
     console.log("Running in", live ? "live" : "dry", "mode");
-    const cachePath = process.argv[2];
-    const newPrefix = process.argv[3];
-    const prefixesToHandle = process.argv[4]?.split(',') || [];
+    const [, roomAlias, newPrefix] = process.argv;
+    const client = await getClientFromEnv(false);
+    const rootRoomId = await client.resolveRoom(roomAlias);
+    const cacheHash = createHash("md5").update(rootRoomId).digest().toString("hex");
+    const cachePath = join(__dirname, '..', `.space-cache.${cacheHash}.json`);
+
     const prefixesToSkip = process.argv.at(3)?.split(',');
+    const prefixesToHandle = process.argv[4]?.split(',') || [];
     const prefixHandleRegex = new RegExp(`^(?:${prefixesToHandle.join("|")})`, 'i');
     const prefixSkipRegex = prefixesToSkip && new RegExp(`^(?:${prefixesToSkip.join("|")})`, 'i');
+
     // Get these rooms from find-aliases-in-room.ts
     const allRooms = new Map<string, {aliases?: string[]}>(
         JSON.parse(await readFile(cachePath, "utf-8"))
@@ -101,7 +115,6 @@ async function main() {
         items: roomsToHandle.size,
     })
     console.log("Continuing");
-    const client = await getClientFromEnv(false);
     for (const roomId of roomsToHandle.keys()) {
         progress.startItem(roomId);
         await archiveRoom(client, roomId, newPrefix);

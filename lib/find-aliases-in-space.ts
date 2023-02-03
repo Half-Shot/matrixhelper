@@ -7,7 +7,13 @@ import { join } from "node:path";
 
 LogService.setLevel(LogLevel.ERROR);
 
-
+/**
+ * This script is used to find the full list of rooms and aliases within a root space.
+ * It's aware of subspaces and rooms within. It will output a `space-cache` file when it
+ * has completed.
+ * 
+ * @example yarn find-aliases-in-space #my-space:example.com
+ */
 async function main() {
     const client = await getClientFromEnv(true);
     const spaceRoomIdOrAlias = process.argv[2];
