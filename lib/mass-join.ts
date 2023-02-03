@@ -1,9 +1,10 @@
+import Envs from "./helpers/env";
 import { getASClientFromEnv, registerASUser } from "./helpers/util";
 
 async function main() {
-    const roomId = process.env.MX_ROOM_ID;
-    const count = parseInt(process.env.MX_USER_COUNT);
-    let members = [];
+    const roomId = Envs.get("MX_ROOM_ID");
+    const count = parseInt(Envs.get("MX_USER_COUNT"));
+    let members: string[] = [];
     // Get an AS client to avoid rate limits
     for (let index = 0; index < count; index++) {
         const userId = `@testuser_${index}:beefy`;
