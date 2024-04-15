@@ -3,7 +3,9 @@ import { getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline/promises";
 import postgres from "postgres";
 
-const sql = postgres()
+const sql = postgres({
+    ssl: 'prefer'
+})
 
 async function main() {
     const client = await getClientFromEnv(false);
