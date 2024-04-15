@@ -1,5 +1,5 @@
-import { MatrixClient } from "matrix-bot-sdk";
-import { getASClientFromEnv, getClientFromEnv } from "./helpers/util";
+import { PowerLevelsEventContent } from "matrix-bot-sdk";
+import { getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline/promises";
 
 async function main() {
@@ -11,15 +11,26 @@ async function main() {
         crlfDelay: 500,
     });
 
+    let stats = { notInRoom: 0, noPowerLevel: 0, completed: 0};
+
     for await (const roomId of rl) {
-        console.log(roomId);
-        const plcontent = await client.getRoomStateEvent(roomId, "m.room.power_levels", "");
-        const roomPL = plcontent.users[userId];
-        if (roomPL !== 100) {
-            console.log(`Not an admin in ${roomId}, only PL${roomPL}`);
+        let plcontent: PowerLevelsEventContent;
+        try {
+            plcontent = await client.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        } catch (ex) {
+            console.warn(`Not in ${roomId}, unable to modify room`);
+            stats.notInRoom++;
             continue;
         }
+        const roomPL = plcontent.users?.[userId];
+        if (roomPL !== 100) {
+            console.warn(`Not an admin in ${roomId}, only PL${roomPL}`);
+            stats.noPowerLevel++;
+            continue;
+        }
+        stats.completed++;
     }
+    Object.entries(stats).forEach(([stat, value]) => console.log(`${stat}: ${value}`));
 }
 
 // async function makeRoomLegacy(client: MatrixClient, roomId: string, name: string, alias: string) {
