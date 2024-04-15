@@ -2,6 +2,7 @@ import { PowerLevelsEventContent } from "matrix-bot-sdk";
 import { getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline/promises";
 import postgres from "postgres";
+import Envs from "./helpers/env";
 
 const sql = postgres({
     ssl: 'prefer'
@@ -19,27 +20,42 @@ async function main() {
     let stats = { notInRoom: 0, noPowerLevel: 0, completed: 0};
 
     // DM rooms
-    const dmRooms = await sql`SELECT room_id from pm_rooms`;
+    const dmRooms = (await sql`SELECT room_id from pm_rooms`).map((v) => v.room_id);
+    const bridgeRooms = (await sql`SELECT room_id from rooms WHERE origin != 'provision'`).map((v) => v.room_id);
+    const provisionRooms = (await sql`SELECT room_id from rooms WHERE origin == 'provision'`).map((v) => v.room_id);
 
-    console.log(dmRooms);
+    console.log(`Found ${dmRooms.length} DM rooms`);
+    console.log(`Found ${bridgeRooms.length} portal rooms`);
+    console.log(`Found ${provisionRooms.length} plumbed rooms`);
 
-    // for await (const roomId of rl) {
-    //     let plcontent: PowerLevelsEventContent;
-    //     try {
-    //         plcontent = await client.getRoomStateEvent(roomId, "m.room.power_levels", "");
-    //     } catch (ex) {
-    //         console.warn(`Not in ${roomId}, unable to modify room`);
-    //         stats.notInRoom++;
-    //         continue;
-    //     }
-    //     const roomPL = plcontent.users?.[userId];
-    //     if (roomPL !== 100) {
-    //         console.warn(`Not an admin in ${roomId}, only PL${roomPL}`);
-    //         stats.noPowerLevel++;
-    //         continue;
-    //     }
-    //     stats.completed++;
-    // }
+    for await (const roomId of [...dmRooms, ...bridgeRooms]) {
+        let plcontent: PowerLevelsEventContent;
+        try {
+            plcontent = await client.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        } catch (ex) {
+            console.warn(`Not in ${roomId}, unable to modify room`);
+            stats.notInRoom++;
+            continue;
+        }
+        const roomPL = plcontent.users?.[userId];
+        if (roomPL !== 100) {
+            console.warn(`Not an admin in ${roomId}, only PL${roomPL}`);
+            stats.noPowerLevel++;
+            continue;
+        }
+        if (plcontent.events_default !== 100) {
+            if (Envs.dry) {
+                console.log('Would set PL in room to 100')
+            } else {
+                plcontent.events_default = 100;
+                if (process.env.BRIDGE_MESSAGE) {
+                    await client.sendMessage(roomId, process.env.BRIDGE_MESSAGE);
+                }
+                await client.sendStateEvent(roomId, "m.room.power_levels", "", plcontent);
+            }
+        }
+        stats.completed++;
+    }
     Object.entries(stats).forEach(([stat, value]) => console.log(`${stat}: ${value}`));
 }
 
