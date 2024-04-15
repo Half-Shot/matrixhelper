@@ -1,5 +1,5 @@
 import { LogService, MatrixClient, PowerLevelsEventContent, RoomNameEventContent } from "matrix-bot-sdk";
-import { getClientFromEnv } from "./helpers/util";
+import { getASClientFromEnv, getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline/promises";
 import postgres from "postgres";
 import Envs from "./helpers/env";
@@ -30,7 +30,7 @@ async function main() {
     console.log(`Found ${bridgeRooms.length} portal rooms`);
     console.log(`Found ${provisionRooms.length} plumbed rooms`);
 
-    for await (const roomId of [...provisionRooms]) {
+    for await (const roomId of [...dmRooms]) {
         let plcontent: PowerLevelsEventContent;
         try {
             plcontent = await client.getRoomStateEvent(roomId, "m.room.power_levels", "");
@@ -52,7 +52,9 @@ async function main() {
     }
 }
 
-async function makeRoomLegacy(client: MatrixClient, roomId: string, plcontent: PowerLevelsEventContent) {
+async function makeRoomLegacy(_client: MatrixClient, roomId: string, plcontent: PowerLevelsEventContent) {
+    const user = Object.keys(plcontent.users ?? {}).find(user => user.startsWith('@_w3c_') && user.endsWith(':matrix.org'));
+    const client = getASClientFromEnv(user);
     if (Envs.dry) {
         console.log('Would set PL in room to 100')
     } else {
