@@ -1,4 +1,4 @@
-import { LogService, MatrixClient, PowerLevelsEventContent, RoomNameEventContent } from "matrix-bot-sdk";
+import { LogService } from "matrix-bot-sdk";
 import { getASClientFromEnv, getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline/promises";
 import postgres from "postgres";
@@ -12,59 +12,40 @@ const sql = postgres({
 
 async function main() {
     const client = await getClientFromEnv(false);
-    const userId = await client.getUserId();
     const rl = createInterface({
         input: process.stdin,
         terminal: false,
         crlfDelay: 500,
     });
 
-    let stats = { notInRoom: 0, noPowerLevel: 0, completed: 0};
-
     // DM rooms
     const dmRooms = (await sql`SELECT room_id from pm_rooms`).map((v) => v.room_id);
-    const bridgeRooms = (await sql`SELECT room_id from rooms WHERE origin != 'provision'`).map((v) => v.room_id);
     const provisionRooms = (await sql`SELECT room_id from rooms WHERE origin = 'provision'`).map((v) => v.room_id);
 
     console.log(`Found ${dmRooms.length} DM rooms`);
-    console.log(`Found ${bridgeRooms.length} portal rooms`);
     console.log(`Found ${provisionRooms.length} plumbed rooms`);
 
     for await (const roomId of [...dmRooms]) {
-        let plcontent: PowerLevelsEventContent;
+        const user = (await client.getJoinedRoomMembers(roomId)).find(user => user.startsWith('@_w3c_') && user.endsWith(':matrix.org'));
+        const asClient = getASClientFromEnv(user);    
         try {
-            plcontent = await client.getRoomStateEvent(roomId, "m.room.power_levels", "");
+            if (process.env.BRIDGE_MESSAGE) {
+                await asClient.sendNotice(roomId, process.env.BRIDGE_MESSAGE);
+            }
         } catch (ex) {
-            console.warn(`Not in ${roomId}, unable to modify room`);
-            stats.notInRoom++;
-            continue;
+            console.warn(`Failed to handle DM room ${roomId}`,  ex);
         }
-        const roomPL = plcontent.users?.[userId];
-        if (roomPL !== 100) {
-            console.warn(`Not an admin in ${roomId}, only PL${roomPL}`);
-            stats.noPowerLevel++;
-            continue;
-        }
-        if (plcontent.events_default !== 100) {
-            await makeRoomLegacy(client, roomId, plcontent);
-        }
-        stats.completed++;
     }
-}
-
-async function makeRoomLegacy(_client: MatrixClient, roomId: string, plcontent: PowerLevelsEventContent) {
-    const user = Object.keys(plcontent.users ?? {}).find(user => user.startsWith('@_w3c_') && user.endsWith(':matrix.org'));
-    const client = getASClientFromEnv(user);
-    if (Envs.dry) {
-        console.log('Would set PL in room to 100')
-    } else {
-        plcontent.events_default = 100;
-        if (process.env.BRIDGE_MESSAGE) {
-            await client.sendNotice(roomId, process.env.BRIDGE_MESSAGE);
+    for await (const roomId of [...provisionRooms]) {
+        try {
+            if (process.env.BRIDGE_MESSAGE) {
+                await client.sendNotice(roomId, process.env.BRIDGE_MESSAGE);
+            }
+        } catch (ex) {
+            console.warn(`Failed to handle provisioned room ${roomId}`,  ex);
         }
-        await client.sendStateEvent(roomId, "m.room.name", "", { name: `[DISABLED] ${name}`});
-        await client.sendStateEvent(roomId, "m.room.power_levels", "", plcontent);
     }
+    console.log('All done!');
 }
 
 main().catch((ex) => {
