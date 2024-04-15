@@ -1,6 +1,9 @@
 import { PowerLevelsEventContent } from "matrix-bot-sdk";
 import { getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline/promises";
+import postgres from "postgres";
+
+const sql = postgres()
 
 async function main() {
     const client = await getClientFromEnv(false);
@@ -13,23 +16,28 @@ async function main() {
 
     let stats = { notInRoom: 0, noPowerLevel: 0, completed: 0};
 
-    for await (const roomId of rl) {
-        let plcontent: PowerLevelsEventContent;
-        try {
-            plcontent = await client.getRoomStateEvent(roomId, "m.room.power_levels", "");
-        } catch (ex) {
-            console.warn(`Not in ${roomId}, unable to modify room`);
-            stats.notInRoom++;
-            continue;
-        }
-        const roomPL = plcontent.users?.[userId];
-        if (roomPL !== 100) {
-            console.warn(`Not an admin in ${roomId}, only PL${roomPL}`);
-            stats.noPowerLevel++;
-            continue;
-        }
-        stats.completed++;
-    }
+    // DM rooms
+    const dmRooms = await sql`SELECT room_id from pm_rooms`;
+
+    console.log(dmRooms);
+
+    // for await (const roomId of rl) {
+    //     let plcontent: PowerLevelsEventContent;
+    //     try {
+    //         plcontent = await client.getRoomStateEvent(roomId, "m.room.power_levels", "");
+    //     } catch (ex) {
+    //         console.warn(`Not in ${roomId}, unable to modify room`);
+    //         stats.notInRoom++;
+    //         continue;
+    //     }
+    //     const roomPL = plcontent.users?.[userId];
+    //     if (roomPL !== 100) {
+    //         console.warn(`Not an admin in ${roomId}, only PL${roomPL}`);
+    //         stats.noPowerLevel++;
+    //         continue;
+    //     }
+    //     stats.completed++;
+    // }
     Object.entries(stats).forEach(([stat, value]) => console.log(`${stat}: ${value}`));
 }
 
