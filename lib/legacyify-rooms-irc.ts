@@ -3,7 +3,7 @@ import { getASClientFromEnv, getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline/promises";
 
 async function main() {
-    const client = await getClientFromEnv(true);
+    const client = await getClientFromEnv(false);
     const userId = await client.getUserId();
     const rl = createInterface({
         input: process.stdin,
