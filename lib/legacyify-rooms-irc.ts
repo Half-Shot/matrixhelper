@@ -49,8 +49,6 @@ async function main() {
             await makeRoomLegacy(client, roomId, plcontent);
         }
         stats.completed++;
-        // Do *one* room.
-        return;
     }
 }
 
