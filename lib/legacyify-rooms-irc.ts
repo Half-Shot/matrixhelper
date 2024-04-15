@@ -22,7 +22,7 @@ async function main() {
     // DM rooms
     const dmRooms = (await sql`SELECT room_id from pm_rooms`).map((v) => v.room_id);
     const bridgeRooms = (await sql`SELECT room_id from rooms WHERE origin != 'provision'`).map((v) => v.room_id);
-    const provisionRooms = (await sql`SELECT room_id from rooms WHERE origin == 'provision'`).map((v) => v.room_id);
+    const provisionRooms = (await sql`SELECT room_id from rooms WHERE origin = 'provision'`).map((v) => v.room_id);
 
     console.log(`Found ${dmRooms.length} DM rooms`);
     console.log(`Found ${bridgeRooms.length} portal rooms`);
