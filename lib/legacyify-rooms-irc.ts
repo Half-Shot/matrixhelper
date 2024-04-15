@@ -1,8 +1,10 @@
-import { PowerLevelsEventContent } from "matrix-bot-sdk";
+import { LogService, PowerLevelsEventContent } from "matrix-bot-sdk";
 import { getClientFromEnv } from "./helpers/util";
 import { createInterface } from "readline/promises";
 import postgres from "postgres";
 import Envs from "./helpers/env";
+
+LogService.muteModule('MatrixHttpClient');
 
 const sql = postgres({
     ssl: 'prefer'
