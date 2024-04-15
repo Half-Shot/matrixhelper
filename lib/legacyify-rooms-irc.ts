@@ -62,7 +62,6 @@ async function makeRoomLegacy(_client: MatrixClient, roomId: string, plcontent: 
         if (process.env.BRIDGE_MESSAGE) {
             await client.sendNotice(roomId, process.env.BRIDGE_MESSAGE);
         }
-        const { name } = await client.getRoomStateEvent(roomId, "m.room.name", "") as RoomNameEventContent;
         await client.sendStateEvent(roomId, "m.room.name", "", { name: `[DISABLED] ${name}`});
         await client.sendStateEvent(roomId, "m.room.power_levels", "", plcontent);
     }
