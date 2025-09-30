@@ -1,4 +1,4 @@
-import { LogLevel, LogService, MatrixClient, MatrixError } from "matrix-bot-sdk";
+import { LogLevel, LogService, MatrixClient, MatrixError } from "@vector-im/matrix-bot-sdk";
 import Envs from "./env";
 
 LogService.setLevel(LogLevel.WARN);
@@ -10,8 +10,16 @@ export async function getClientFromEnv(needAdmin = false) {
     }
     const client = new MatrixClient(Envs.homeserver, token);
     if (needAdmin) {
-        if (!await client.adminApis.synapse.isAdmin(await client.getUserId())) {
-            throw Error('Access token is not admin');
+        try {
+            if (!await client.adminApis.synapse.isAdmin(await client.getUserId())) {
+                throw Error('Access token is not admin');
+            }
+        } catch (ex) {
+            if (ex instanceof MatrixError && ex.errcode === 'M_UNRECOGNIZED') {
+                // Might be a MAS host, we can't check
+            } else {
+                throw ex;
+            }
         }
     }
     await client.getWhoAmI();

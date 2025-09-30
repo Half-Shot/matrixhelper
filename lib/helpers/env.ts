@@ -15,6 +15,16 @@ export default class Envs {
         return value;
     }
 
+    static getWithDefault(env: string, def: string) {
+        const value = process.env[env];
+        return value ?? def;
+    }
+
+    static getWithType<T>(typeFn: (t: string) => T, env: string, def: string) {
+        const value = process.env[env];
+        return typeFn(value ?? def);
+    }
+
     static get dry() {
         return process.env.DRY !== 'false';
     }
