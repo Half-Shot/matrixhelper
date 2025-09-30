@@ -1,9 +1,6 @@
 import { getClientFromEnv } from "./helpers/util";
-import { LogLevel, LogService } from "@vector-im/matrix-bot-sdk";
 import Envs from "./helpers/env";
 import { Cache } from "./helpers/cache";
-
-LogService.setLevel(LogLevel.ERROR);
 
 // 90 days
 const days = Envs.getWithType(s => {
