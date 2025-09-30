@@ -1,3 +1,5 @@
 node_modules
 *.txt
 .space-cache*
+
+*.cache.*
