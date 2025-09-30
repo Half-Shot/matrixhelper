@@ -17,7 +17,7 @@ async function main() {
             continue;
         }
         const email = userDetails.threepids?.find((m: any) => m.medium === 'email')?.address;
-        const externalIds = email && [ { authProvider: 'saml', external_id: email } ]
+        const externalIds = email && [ { authProvider, external_id: email } ]
         if (!externalIds) {
             console.warn(`No email bound for ${userDetails.name}`);
             continue;
