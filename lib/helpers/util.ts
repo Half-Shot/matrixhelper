@@ -58,3 +58,31 @@ export async function registerASUser(userId: string) {
         throw err;
     }
 }
+
+export async function getVictoriaMetricAvgValue(query: string): Promise<number> {
+    try {
+        const queryString = new URLSearchParams({
+            start: ((Date.now() - 40000) / 1000).toString(),
+            end: ((Date.now() - 10000) / 1000).toString(),
+            step: "3s",
+            query
+        }).toString();
+        const req = await fetch(new URL(`/prometheus/api/v1/query_range`, Envs.prometheusUrl), {
+            "body": queryString.toString(),
+            "method": "POST",
+            "mode": "cors"
+        });
+        if (!req.ok) {
+            console.warn(`VM metrics req not okay: ${req.status} ${req.statusText}`)
+        }
+        const data = await req.json();
+        const values = data.data.result[0].values as Array<[number, string]>;
+        const avg = values.map(([,b]) => parseFloat(b)).slice(-50);
+        const value = avg.reduce((a,b) => a+b) / avg.length;;
+        console.log('VM calculuated to be', value)
+        return value;
+    } catch (ex) {
+        console.warn(`VM metrics error: ${ex}`);
+        return 0;
+    }
+}

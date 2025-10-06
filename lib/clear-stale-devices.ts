@@ -1,4 +1,4 @@
-import { getClientFromEnv } from "./helpers/util";
+import { getClientFromEnv, getVictoriaMetricAvgValue } from "./helpers/util";
 import Envs from "./helpers/env";
 import { Cache } from "./helpers/cache";
 
@@ -55,18 +55,43 @@ async function main() {
 
     let count = 0;
     const maxSize = staleDeviceSet.length;
-    do {
-        const [device] = staleDeviceSet.splice(0, 1);
-        console.log(`Deleting ${device.user_id}/${device.device_id} ls: ${new Date(device.last_seen_ts)} (${count++}/${maxSize})`);
-        try {
-            await client.doRequest('DELETE', `/_synapse/admin/v2/users/${encodeURIComponent(device.user_id)}/devices/${device.device_id}`) as DeviceListResponse;
-        } catch (ex) {
-            console.error("Encountered error during processing, retrying in 3 minutes", ex);
-            await new Promise(r => setTimeout(r, 3*60000));
-        } finally {
-            cache.removeFromCache(device);
+
+    const metricsStatus = async (): Promise<number> => {
+        if (Envs.prometheusUrl) {
+            return getVictoriaMetricAvgValue(`sum(rate(synapse_storage_transaction_time_sum_total{${Envs.prometheusFilter}}[1m])))`);
         }
-    } while(staleDeviceSet.length)
+        return 0;
+    }
+
+    const waitFn = async () => {
+        do {
+            console.warn('VM state is above 600%, waiting 15s')
+            await new Promise(r => setTimeout(r, 15000));
+        } while (await metricsStatus() > 6)
+    }
+    let waitMetricsLoop: Promise<void> = (await metricsStatus() > 6) ? waitFn() : Promise.resolve();
+    const workFn = async () => {
+        do {
+            await waitMetricsLoop;
+            if (await metricsStatus() > 6) {
+                waitMetricsLoop = waitFn();
+                await waitMetricsLoop;
+            }
+            const [device] = staleDeviceSet.splice(0, 1);
+            console.log(`Deleting ${device.user_id}/${device.device_id} ls: ${new Date(device.last_seen_ts)} (${count++}/${maxSize})`);
+            try {
+                await client.doRequest('DELETE', `/_synapse/admin/v2/users/${encodeURIComponent(device.user_id)}/devices/${device.device_id}`) as DeviceListResponse;
+            } catch (ex) {
+                console.error("Encountered error during processing, retrying in 1 minute", ex);
+                await new Promise(r => setTimeout(r, 60000));
+            } finally {
+                cache.removeFromCache(device);
+            }
+            
+        } while(staleDeviceSet.length)
+    };
+    await Promise.all([workFn(), workFn(), workFn(), workFn(), workFn(), workFn(), workFn(), workFn()]);
+
 }
 
 main().catch((ex) => {
