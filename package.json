@@ -4,8 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@types/terminal-kit": "^2.5.1",
-    "matrix-bot-sdk": "^0.6.3",
+    "@types/terminal-kit": "^2.5.7",
+    "@vector-im/matrix-bot-sdk": "^0.7.1-element.14",
+    "random-words": "^2.0.1",
     "table": "^6.8.1",
     "terminal-kit": "^3.0.0",
     "ts-node": "^10.9.1",
@@ -23,6 +24,7 @@
     "op-in-rooms": "ts-node ./lib/op-in-rooms.ts",
     "op-user": "ts-node ./lib/op-user.ts",
     "room-ops": "ts-node ./lib/room-ops.ts",
-    "unbridge-rooms": "ts-node ./lib/unbridge-rooms.ts"
+    "unbridge-rooms": "ts-node ./lib/unbridge-rooms.ts",
+    "leave-stale-rooms": "ts-node ./lib/leave-stale-rooms.ts"
   }
 }
